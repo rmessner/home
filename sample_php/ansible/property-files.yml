@@ -1,0 +1,2 @@
+property_files:
+- { src: templates/test.php.j2, dest: var/www/html/test.php }

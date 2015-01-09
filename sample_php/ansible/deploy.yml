@@ -1,0 +1,29 @@
+---
+- hosts: all
+  tasks:
+  - file: path=/tmp/installation-{{ ST }}-{{ VERSION }} 
+          state=directory
+  
+  - get_url: url=http://nexus.104.155.7.227.xip.io/content/repositories/AvailableFor{{ environement }}/{{ ST }}/livrable/{{ VERSION }}/livrable-{{ VERSION }}.tar.gz
+             dest=/tmp/installation-{{ ST }}-{{ VERSION }}/
+             
+  - unarchive: src=/tmp/installation-{{ ST }}-{{ VERSION }}/livrable-{{ version }}.tar.gz 
+               dest=/tmp/installation-{{ ST }}-{{ VERSION }}/ 
+               copy=no
+  
+  - include_vars: /tmp/installation-{{ ST }}-{{ VERSION }}/property-files.yml
+  
+  - template: src=/tmp/installation-{{ ST }}-{{ VERSION }}/{{ item.src }} 
+              dest=/tmp/installation-{{ ST }}-{{ VERSION }}/image/{{ item.dest }}
+    with_item: property_files
+    delegate: {{ host }}
+    
+  - template: src=templates/Dockerfile.j2 dest=/tmp/installation-{{ ST }}-{{ VERSION }}/image/Dockerfile
+  
+  - docker_image: path="/tmp/installation-{{ ST }}-{{ VERSION }}/image/" name="{{ ST }}" tag="{{ VERSION }}" state=present
+    sudo: yes
+  
+  - docker: image="{{ ST }}:{{ VERSION }}"
+            count="{{ CONTAINER_PER_HOST }}"
+            state=running
+            ports="{{ EXPOSED_PORT }}"
